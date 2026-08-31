@@ -1,0 +1,95 @@
+name: DevSecOps Software Supply Chain Engine
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Runs nightly at midnight
+  workflow_dispatch: # Allows manual trigger from the GitHub UI
+  push:
+    branches:
+      - main # Triggers the release build when code is merged to main
+
+jobs:
+  # ----------------------------------------------------
+  # STAGE 1: SCAN & AUTOMATED SECURITY GATES
+  # ----------------------------------------------------
+  security-gate:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Install Trivy Security Scanner
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+          wget -qO - https://github.io | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://github.io $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install -y trivy
+
+      - name: Scan Java BOM Baseline (Filesystem)
+        run: trivy fs --format json --output java-report.json ./baselines/java || true
+
+      - name: Scan Node.js Baseline (Filesystem)
+        run: trivy fs --format json --output node-report.json ./baselines/nodejs || true
+
+      - name: Scan Python Base Dockerfile
+        run: trivy config --format json --output python-report.json ./baselines/python || true
+
+      # This artifact upload saves the scan results so our upcoming Go script can analyze them
+      - name: Archive Security Gate Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            java-report.json
+            node-report.json
+            python-report.json
+
+  # ----------------------------------------------------
+  # STAGE 2: RELEASE BUILD & ARTIFACT REGISTRY PUBLISH
+  # ----------------------------------------------------
+  release-and-publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # Required permission to publish to GitHub Package Registry
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Set up Java JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Publish Golden Java BOM to GitHub Packages
+        run: |
+          cd baselines/java
+          mvn clean deploy \
+            -DaltDeploymentRepository=github::default::https://github.com{{ github.repository }} \
+            -Dregistry.username=${{ github.actor }} \
+            -Dregistry.password=${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Hardened Python Base Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./baselines/python
+          file: ./baselines/python/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/python-base:latest
+            ghcr.io/${{ github.repository_owner }}/python-base:${{ github.sha }}

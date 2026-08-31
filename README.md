@@ -6,8 +6,8 @@ An enterprise-grade control plane and background orchestration engine designed f
 
 ## 🎯 The Real-World Problem & Solution
 
-- **The Problem:** In large financial institutions with dozens of scrum teams, managing thousands of fragmented Cyber Vulnerability Management (CVM) findings creates severe alert fatigue, duplicated patching efforts, and massive compliance risks.
-- **The Solution:** This platform centralizes dependency definitions into corporate "Golden Baselines". A nightly Go-driven engine executes container/filesystem security gates (via Trivy/Snyk), feeds vulnerabilities into an LLM patch agent, auto-generates non-breaking Pull Requests, and publishes verified, zero-CVE packages directly to **JFrog Artifactory** upon merge.
+- **The Problem:** In large financial institutions with dozens of scrum teams, managing thousands of fragmented Component Vulnerability Management (CVM) findings creates severe alert fatigue, duplicated patching efforts, and massive compliance risks.
+- **The Solution:** This platform centralizes dependency definitions into corporate "Golden Baselines". A nightly Go-driven engine executes container/filesystem security gates (via Trivy/Snyk), feeds vulnerabilities into an LLM patch agent, auto-generates non-breaking Pull Requests, and publishes verified, zero-CVE packages directly to **GitHub Packages** upon merge.
 
 ---
 
