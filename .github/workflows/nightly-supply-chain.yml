@@ -65,14 +65,18 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+          server-id: github
+          server-username: GITHUB_ACTOR
+          server-password: GITHUB_TOKEN
 
       - name: Publish Golden Java BOM to GitHub Packages
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd baselines/java
           mvn clean deploy \
-            -DaltDeploymentRepository=github::default::https://github.com{{ github.repository }} \
-            -Dregistry.username=${{ github.actor }} \
-            -Dregistry.password=${{ secrets.GITHUB_TOKEN }}
+            -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/${{ github.repository }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

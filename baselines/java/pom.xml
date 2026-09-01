@@ -1,6 +1,6 @@
-<project xmlns="http://apache.org" 
-         xmlns:xsi="http://w3.org"
-         xsi:schemaLocation="http://apache.org http://apache.org">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.bank.platform</groupId>
     <artifactId>banking-security-bom</artifactId>
@@ -21,7 +21,7 @@
         <repository>
             <id>github</id>
             <name>GitHub Packages</name>
-            <url>https://github.com{github.repository}</url>
+            <url>https://maven.pkg.github.com/sky2194/devsecops-supply-chain-pipeline</url>
         </repository>
     </distributionManagement>
 </project>
